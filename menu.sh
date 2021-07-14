@@ -151,8 +151,8 @@ Menu()
       Credits
     elif [ $option -eq 4 ]
     then
-      g++ dealloc_sduko.cpp -o dealloc_sduko
-      ./dealloc_sduko
+      g++ dealloc_resource.cpp -o dealloc_resource
+      ./dealloc_resource SUDOKU
       exit
     else
       clear

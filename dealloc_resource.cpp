@@ -10,7 +10,8 @@
 #include <cstring>
 using namespace std;
 
-int main()
+int main(int argc, char** argv)
+
 {
 	int fd1;
 	char * myfifo = "/tmp/myfifo";
@@ -24,8 +25,7 @@ int main()
 		// cout << "ENTER: ";
 		fd1 = open(myfifo,O_WRONLY);
 		// fgets(str2, 80, stdin);
-		str2 = "SUDOKU";
-		write(fd1, str2, strlen(str2)+1);
+		write(fd1, argv[1], strlen(argv[1])+1);
 		close(fd1);
 	// }
 	return 0;
