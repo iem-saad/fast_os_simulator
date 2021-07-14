@@ -13,125 +13,42 @@ using namespace std;
 
 
 void printMainMenu(void);
+void display_running_cores(void);
+void displayRunningProcs(void);
+void assign_core(int );
+void release_resources(char* );
+void * thread_for_inter_terminal_comm(void * );
+void printMainMenu(void);
+void dealloc_core(int );
+
 long int RAM = 0;
 long int HDD = 0;
 long int CORES = 0;
 
 enum Processes {
-		Sudoku,
-		Calculator,
-		TicTacToe,
-		Clock,
-		Notepad,
-		Minesweeper,
-		PhoneBook,
-		TODO,
-		Casino
+	Sudoku,
+	Calculator,
+	TicTacToe,
+	Clock,
+	Notepad,
+	Minesweeper,
+	PhoneBook,
+	TODO,
+	Casino,
+	Create,
+	Delete,
+	Rename
 };
 static const char *enum_str[] =
-		    { "SUDOKU", "CALCULATOR", "TICTAC", "CLOCK", "NOTEPAD", "MINESWEEPER", "PHONEBOOK", "TODO", "CASINO", "CREATE", "DELETE", "RENAME"};
+		  { "SUDOKU", "CALCULATOR", "TICTAC", "CLOCK", "NOTEPAD", "MINESWEEPER", "PHONEBOOK", "TODO", "CASINO", "CREATE", "DELETE", "RENAME"};
 const int noOfMaxProc = 15;
 int runningProcesses[noOfMaxProc] = {0};
 long int needOfProcesses[noOfMaxProc] = {0};
-
-void displayRunningProcs(void)
-{
-	bool noProcFlag=false;
-	cout << "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
-	cout << "++++++++++++++++ CURRENTLY RUNNING PROCESSES +++++++++++++++\n";
-	cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n";
-	cout << "Available RAM: " << RAM <<" MB"<<endl;
-	cout << "Available Storage: " << HDD <<" MB" <<endl;
-	cout << "Available Cores: " << CORES <<endl<<endl;
-	for (int i = 0; i < 15; ++i)
-	{
-		if (runningProcesses[i])
-		{
-		  cout<< enum_str[i] << " is Currenlty Running " << runningProcesses[i] << " times" << endl;
-		  noProcFlag = true;
-		}
-	}
-	if (!noProcFlag)
-	{
-		cout << "Currenlty No Processes is Running :( \n";
-	}
-	cout << "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
-}
-
-
-//////////////////////////////////////////////////
-///////		RELEASE ALLOCATED RESOURCES			////////
-//////////////////////////////////////////////////
-
-void release_resources(char* str)
-{
-	string str1, str2;
- 	int index;
-		for (int i = 0;i<12;i++)
-		{
-		str1 = string(enum_str[i]);
-		str2 = string(str);
-		
-			if (!str1.compare(str2))
-			{
-				index = i;
-				break;
-			}
-		}
-		  system("clear");
-		  runningProcesses[index]--;
-		  RAM += needOfProcesses[index];
-		  displayRunningProcs();
-		  printMainMenu();
-}
-
-
-//////////////////////////////////////////////////
-//////////////////////////////////////////////////
-///	 INTER TERMINAL THREAD COMMUNICATION	////
-//////////////////////////////////////////////////
-//////////////////////////////////////////////////
+int threads_per_core=2;
+int** runningCores;
 
 
 
-void * thread_for_inter_terminal_comm(void * arg)
-{
-	int fd;
-	char * myfifo = "/tmp/myfifo";
-	mkfifo(myfifo, 0666);	//giving permissions
-
-	char arr1[80], arr2[80];
-	while (true)
-	{
-
-		fd = open(myfifo, O_RDONLY);
-		// Read from FIFO
-		read(fd, arr1, sizeof(arr1));
-	 	release_resources(arr1);
-		close(fd);
-	}
-}
-
-void printMainMenu()
-{
-	cout << "\n************************************************************\n";
-	cout << "************************ MAIN MENU *************************\n";
-	cout << "************************************************************\n\n";
-	cout << "Please Enter 1 for SUDOKU\n";
-	cout << "Please Enter 2 for Calculator\n";
-	cout << "Please Enter 3 for Tic Tac Toe\n";
-	cout << "Please Enter 4 for Clock\n";
-	cout << "Please Enter 5 for Notepad\n";
-	cout << "Please Enter 6 for Minesweeper\n";
-	cout << "Please Enter 7 for PhoneBook\n";
-	cout << "Please Enter 8 for TO-DO List\n";
-	cout << "Please Enter 9 for Casino\n";
-	cout << "Please Enter 10 to Create A File" << endl;
-	cout << "Please Enter 11 to Delete A File" << endl;
-	cout << "Please Enter 12 to Rename A File" << endl;
-	cout << "Enter Here: ";
-	return;
-}
 int main()
 {
 
@@ -184,6 +101,13 @@ int main()
 	int status;
 	pthread_t ptid;
 	pthread_create(&ptid,NULL,thread_for_inter_terminal_comm,NULL);
+	runningCores = new int*[CORES];
+	for (int i = 0; i < CORES; ++i)
+		runningCores[i] = new int[threads_per_core];
+	for (int i = 0; i < CORES; ++i)
+		for (int j = 0; j < threads_per_core; ++j)
+			runningCores[i][j] = -1;
+
 	while(true)
 	{
 		displayRunningProcs();
@@ -199,6 +123,12 @@ int main()
 		    RAM -= needOfProcesses[choice-1];
 		  }
 		}
+		else
+		{
+			cout << "Ops! Not Enough RAM Available Process has been added to waiting Queue\n";
+			continue;
+		}
+		assign_core(choice-1);
 		switch(choice)
 		{
 				case 1:	//sodoku
@@ -212,10 +142,8 @@ int main()
 					else if (!pid)
 					{
 					
-					
 						execl("./exec", "./exec", "./game.sh", NULL);
-						
-					 exit(0);	//idk why you used that saad - (bilal)
+					 	exit(0);	//idk why you used that saad - (bilal)
 					}
 				}
 			break;
@@ -346,3 +274,136 @@ int main()
 	return 0;
 }
 
+
+void dealloc_core(int process)
+{
+	for (int i = 0; i < CORES; ++i)
+		for (int j = 0; j < threads_per_core; ++j)
+			if (runningCores[i][j] ==  process)
+			{
+				runningCores[i][j] = -1;
+				return;
+			}
+}
+void assign_core(int process)
+{
+	for (int i = 0; i < CORES; ++i)
+		for (int j = 0; j < threads_per_core; ++j)
+			if (runningCores[i][j] ==  -1)
+			{
+				runningCores[i][j] = process;
+				return;
+			}
+}
+void display_running_cores(void)
+{
+	for (int i = 0; i < CORES; ++i)
+		for (int j = 0; j < threads_per_core; ++j)
+			if (runningCores[i][j] !=  -1)
+			{
+				cout << "-----------------------------------------------------------------------\n";
+				cout << "Core " << i+1 << " is Executing "<< enum_str[runningCores[i][j]] <<endl;
+				cout << "-----------------------------------------------------------------------\n";
+			}
+}
+
+
+void displayRunningProcs(void)
+{
+	bool noProcFlag=false;
+	cout << "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+	cout << "++++++++++++++++ CURRENTLY RUNNING PROCESSES +++++++++++++++\n";
+	cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n";
+	cout << "Available RAM: " << RAM <<" MB"<<endl;
+	cout << "Available Storage: " << HDD <<" MB" <<endl;
+	cout << "Available Cores: " << CORES <<endl<<endl;
+	display_running_cores();
+	for (int i = 0; i < 15; ++i)
+	{
+		if (runningProcesses[i])
+		{
+		  cout<< enum_str[i] << " is Currenlty Running " << runningProcesses[i] << " times" << endl;
+		  noProcFlag = true;
+		}
+	}
+	if (!noProcFlag)
+	{
+		cout << "Currenlty No Processes is Running :( \n";
+	}
+	cout << "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+}
+
+//////////////////////////////////////////////////
+///////		RELEASE ALLOCATED RESOURCES			////////
+//////////////////////////////////////////////////
+
+void release_resources(char* str)
+{
+	string str1, str2;
+ 	int index;
+		for (int i = 0;i<12;i++)
+		{
+		str1 = string(enum_str[i]);
+		str2 = string(str);
+		
+			if (!str1.compare(str2))
+			{
+				index = i;
+				break;
+			}
+		}
+	  system("clear");
+	  dealloc_core(index);
+	  runningProcesses[index]--;
+	  RAM += needOfProcesses[index];
+	  displayRunningProcs();
+	  printMainMenu();
+}
+
+
+//////////////////////////////////////////////////
+//////////////////////////////////////////////////
+///	 INTER TERMINAL THREAD COMMUNICATION	////
+//////////////////////////////////////////////////
+//////////////////////////////////////////////////
+
+
+
+void * thread_for_inter_terminal_comm(void * arg)
+{
+	int fd;
+	char * myfifo = "/tmp/myfifo";
+	mkfifo(myfifo, 0666);	//giving permissions
+
+	char arr1[80], arr2[80];
+	while (true)
+	{
+
+		fd = open(myfifo, O_RDONLY);
+		// Read from FIFO
+		read(fd, arr1, sizeof(arr1));
+	 	release_resources(arr1);
+		close(fd);
+	}
+}
+
+void printMainMenu()
+{
+	cout << "\n************************************************************\n";
+	cout << "************************ MAIN MENU *************************\n";
+	cout << "************************************************************\n\n";
+	cout << "Please Enter 1 for SUDOKU\n";
+	cout << "Please Enter 2 for Calculator\n";
+	cout << "Please Enter 3 for Tic Tac Toe\n";
+	cout << "Please Enter 4 for Clock\n";
+	cout << "Please Enter 5 for Notepad\n";
+	cout << "Please Enter 6 for Minesweeper\n";
+	cout << "Please Enter 7 for PhoneBook\n";
+	cout << "Please Enter 8 for TO-DO List\n";
+	cout << "Please Enter 9 for Casino\n";
+	cout << "Please Enter 10 to Create A File" << endl;
+	cout << "Please Enter 11 to Delete A File" << endl;
+	cout << "Please Enter 12 to Rename A File" << endl;
+	cout << "Enter Here: ";
+	return;
+}
