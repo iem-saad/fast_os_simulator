@@ -8,12 +8,15 @@
 #include <fcntl.h>
 #include <pthread.h>
 #include <ctime>
+#include <cstring>
+
 using namespace std;
 
-int main()
+int main(int argc, char* argv[])
 {
-
-  system("gnome-terminal -- sh -c './game.sh'");
-  return 0;
+  string temp; 
+  temp = "gnome-terminal -- sh -c '" + string(argv[1])  + "'"; 
+    system(temp.c_str());
+    return 0;
 }
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-name='Saad Abdullah'
+
 #######################################
 # Displays Big Sudoku Game Using figlet
 # Then displays a loading bar
@@ -13,24 +13,24 @@ name='Saad Abdullah'
 #   Nothing
 #######################################
 display_landing_page() {
-	clear
-	green_fg
-	bold
-	tput cup 6; 
-	figlet -c 'Sudoku Game';
-	reset_format
-	tput cup 12 10; 
-	green_fg
-	for (( i = 0; i < 55; i++ )); do
-		sleep 0.05
-		echo -n -e '*'
-	done
-	tput cup 15 15;
-	blink
-	read -p "++++++++++ Press Any Key To Continue ++++++++++"  value 
-	reset_format
-	white_fg
-	clear
+  clear
+  green_fg
+  bold
+  tput cup 6; 
+  figlet -c 'Sudoku Game';
+  reset_format
+  tput cup 12 10; 
+  green_fg
+  for (( i = 0; i < 55; i++ )); do
+    sleep 0.05
+    echo -n -e '*'
+  done
+  tput cup 15 15;
+  blink
+  read -p "++++++++++ Press Any Key To Continue ++++++++++"  value 
+  reset_format
+  white_fg
+  clear
 }
 
 #######################################
@@ -48,20 +48,20 @@ display_landing_page() {
 #######################################
 
 get_name() {
-	clear
-	green_fg
-	bold
-	# Command to change x & y axsis of cursor on console
-	tput cup 6; 
-	figlet -c 'Player Name';
-	reset_format
-	tput cup 14 15;
-	yellow_fg
-	bold
-	read -p "Please Enter Your Name: "  name 
-	reset_format
-	white_fg
-	clear
+  clear
+  green_fg
+  bold
+  # Command to change x & y axsis of cursor on console
+  tput cup 6; 
+  figlet -c 'Player Name';
+  reset_format
+  tput cup 14 15;
+  yellow_fg
+  bold
+  read -p "Please Enter Your Name: "  name 
+  reset_format
+  white_fg
+  clear
 }
 
 #######################################
@@ -77,24 +77,24 @@ get_name() {
 #   Nothing
 #######################################
 bold() {
-	tput bold;
+  tput bold;
 }
 blink() {
-	tput blink;
+  tput blink;
 }
 reset_format() {
-	tput sgr0;
+  tput sgr0;
 }
 green_fg() {
-	tput setaf 2;
+  tput setaf 2;
 }
 white_fg() {
-	tput setaf 7;
+  tput setaf 7;
 }
 yellow_fg() {
-	tput setaf 3;
+  tput setaf 3;
 }
 red_fg() {
-	tput setaf 1;
+  tput setaf 1;
 }
 

@@ -101,7 +101,7 @@ Credits()
   tput cup 10 10;
   echo "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
   tput cup 11 10;
-  echo "++++++ This game was created by Mahnoor Abid, Sardar Raheem +++++++"
+  echo "++++++ This game was created by Mahnoor Abid, Bilal Haider +++++++"
   tput cup 12 10;
   echo "++++++            Saad Abdullah on 16/05/2021               +++++++"
   tput cup 13 10;
@@ -153,6 +153,8 @@ Menu()
     then
       g++ dealloc_resource.cpp -o dealloc_resource
       ./dealloc_resource SUDOKU
+      # system("./dealloc_resource SUDUKO")
+      
       exit
     else
       clear
