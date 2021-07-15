@@ -52,9 +52,13 @@ int** runningCores;
 int main()
 {
 
-	// system(" chmod +x ./os_logo.sh");
-	// system("./os_logo.sh");
+	system("clear");
+	system(" chmod +x ./os_logo.sh");
+	system("./os_logo.sh");
 	system("rm /tmp/myfifo");
+	system("figlet Resource Allocation");
+	sleep(4);
+	system("clear");
 	needOfProcesses[0] = 150;	//suduko
 	needOfProcesses[1] = 50; //calculator
 	needOfProcesses[2] = 100; // TicTacToe
@@ -71,6 +75,9 @@ int main()
 	while(RAM == 0 || CORES == 0 || HDD == 0)
 	{
 		int input =0;
+		cout << "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+		cout << "++++++++++++++++ Allocation Of Resources +++++++++++++++\n";
+		cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n";
 		cout << "Please Enter How Much RAM you want?(in GB's): ";
 		cin >> input;
 		if (input < 1)
@@ -95,7 +102,7 @@ int main()
 		  continue;
 		}
 	}
-
+	system("clear");
 	pid_t  pid;
 	int choice;
 	int status;
@@ -117,9 +124,7 @@ int main()
 		{
 		  if (RAM >= needOfProcesses[choice-1])
 		  {
-		  cout<< "PROCESS: " << runningProcesses[choice-1] << " BEFORE" << endl;
-		    runningProcesses[choice-1]++;
-		  cout<< "PROCESS: " << runningProcesses[choice-1] << " BEFORE" << endl;
+			  runningProcesses[choice-1]++;
 		    RAM -= needOfProcesses[choice-1];
 		  }
 		}
