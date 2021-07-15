@@ -16,7 +16,7 @@ int main(int argc, char* argv[])
 {
   string temp; 
   temp = "gnome-terminal -- sh -c '" + string(argv[1])  + "'"; 
-    system(temp.c_str());
-    return 0;
+  system(temp.c_str());
+  return 0;
 }
 

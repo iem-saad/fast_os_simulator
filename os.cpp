@@ -56,6 +56,10 @@ int threads_per_core=2;
 int** runningCores;
 list<int> readyQueue;
 list<int> waitingQueue;
+pthread_t ptid;
+pthread_t dispatch;
+pthread_t shift;
+
 
 
 
@@ -63,9 +67,15 @@ int main()
 {
 
   system("clear");
+  system("figlet -c -t -k FAST-OS | boxes -d cat -a hc -p h8 | lolcat");
+  sleep(3);
+  system("clear");
+  system(" chmod 755 os_loading_bar.sh");
+  system("./os_loading_bar.sh");
   // system(" chmod +x ./os_logo.sh");
   // system("./os_logo.sh");
   system("rm /tmp/myfifo");
+  system("notify-send 'Hi There! Welcome to FAST-OS'");
   // system("figlet Resource Allocation");
   // sleep(4);
   system("clear");
@@ -115,10 +125,7 @@ int main()
   system("clear");
   int status;
 
-  pthread_t ptid;
-  pthread_t dispatch;
-  pthread_t shift;
-
+ 
   pthread_create(&dispatch, NULL, dispatcher , NULL);
   pthread_create(&shift, NULL, shift_process_state , NULL);
   pthread_create(&ptid,NULL,thread_for_inter_terminal_comm,NULL);
@@ -273,6 +280,7 @@ void printMainMenu()
   cout << "Please Enter 10 to Create A File" << endl;
   cout << "Please Enter 11 to Delete A File" << endl;
   cout << "Please Enter 12 to Rename A File" << endl;
+  cout << "Please Enter 13 to terminate OS" << endl;
   cout << "Enter Here: ";
   return;
 }
@@ -297,6 +305,7 @@ void * shift_process_state(void * argv)
 void *dispatcher(void * argv)
 {
   pid_t  pid;
+  string temp;
   int currRun=-1;
   //thread which check the ready queue and call exec file as soon as it get recourses
   while(true)
@@ -313,6 +322,8 @@ void *dispatcher(void * argv)
     {
         runningProcesses[currRun-1]++;
         RAM -= needOfProcesses[currRun-1];
+        temp = "notify-send '"+ string(enum_str[currRun-1]) +" Has been dispatched From ReadyQueue!'";
+        system(temp.c_str());
         assign_core(currRun-1);
         system("clear");
         displayRunningProcs();
@@ -471,6 +482,22 @@ void scheduler(void)
     displayRunningProcs();
     printMainMenu();
     cin >> choice;
+    if (choice == 13)
+    {
+      system("kill $(pgrep bash)");
+      system("clear");
+      pthread_cancel(ptid);
+      pthread_cancel(dispatch);
+      pthread_cancel(shift);
+      cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+      cout << "---------------- Closing all Processes & Exiting ----------------\n";
+      cout << "+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+      sleep(2);
+      system("clear");
+      system("figlet -c -t -k BYE BYE | boxes -d peek -a hc -p h8 | lolcat");
+      sleep(2);
+      exit(0);
+    }
     if (choice < noOfMaxProc && choice >= 1)
     {
       if ((RAM >= needOfProcesses[choice-1]))
@@ -481,7 +508,7 @@ void scheduler(void)
       else
       {
         //waiting queue implementation
-        cout << "Ops! Not Enough RAM Available Process has been added to waiting Queue\n";
+        system("zenity --warning --width=400 --height=200 --text 'Ops! Not Enough RAM Available Process has been added to waiting Queue'");
         waitingQueue.push_back(choice);
         continue;
       }
