@@ -12,6 +12,7 @@
 #include <list>
 #include <iterator>
 #include <bits/stdc++.h>
+#include <semaphore.h>
 
 using namespace std;
 
@@ -27,7 +28,7 @@ void dealloc_core(int );
 void * dispatcher(void *);
 void scheduler(void );
 void * shift_process_state(void *);
-
+bool check_free_cores(void);
 
 long int RAM = 0;
 long int HDD = 0;
@@ -45,11 +46,12 @@ enum Processes {
   Casino,
   Create,
   Delete,
-  Rename
+  Rename,
+  Calendar
 };
 static const char *enum_str[] =
-      { "SUDOKU", "CALCULATOR", "TICTAC", "CLOCK", "NOTEPAD", "MINESWEEPER", "PHONEBOOK", "TODO", "CASINO", "CREATE", "DELETE", "RENAME"};
-const int noOfMaxProc = 15;
+      { "SUDOKU", "CALCULATOR", "TICTAC", "CLOCK", "NOTEPAD", "MINESWEEPER", "PHONEBOOK", "TODO", "CASINO", "CREATE", "DELETE", "RENAME", "CALENDAR"};
+const int noOfMaxProc = 13;
 int runningProcesses[noOfMaxProc] = {0};
 long int needOfProcesses[noOfMaxProc] = {0};
 int threads_per_core=2;
@@ -59,19 +61,20 @@ list<int> waitingQueue;
 pthread_t ptid;
 pthread_t dispatch;
 pthread_t shift;
+sem_t semaphore;
+bool kernel_mode = false;
 
 
 
-
-int main()
+int main(int argc, char* argv[])
 {
 
-  system("clear");
-  system("figlet -c -t -k FAST-OS | boxes -d cat -a hc -p h8 | lolcat");
-  sleep(3);
-  system("clear");
-  system(" chmod 755 os_loading_bar.sh");
-  system("./os_loading_bar.sh");
+  // system("clear");
+  // system("figlet -c -t -k FAST-OS | boxes -d cat -a hc -p h8 | lolcat");
+  // sleep(3);
+  // system("clear");
+  // system(" chmod 755 os_loading_bar.sh");
+  // system("./os_loading_bar.sh");
   // system(" chmod +x ./os_logo.sh");
   // system("./os_logo.sh");
   system("rm /tmp/myfifo");
@@ -79,6 +82,14 @@ int main()
   // system("figlet Resource Allocation");
   // sleep(4);
   system("clear");
+  sem_init(&semaphore, 0, 1);
+  string str1;
+  str1 = string(argv[1]);
+  if (!str1.compare("kernel"))
+  {
+    kernel_mode = true;
+    system("notify-send 'You Are in Kernel Mode'");
+  }
   needOfProcesses[0] = 150; //suduko
   needOfProcesses[1] = 50; //calculator
   needOfProcesses[2] = 100; // TicTacToe
@@ -91,8 +102,9 @@ int main()
   needOfProcesses[9] = 50; //Create a File
   needOfProcesses[10] = 50; //Delete a File
   needOfProcesses[11] = 50; //Rename a File
+  needOfProcesses[12] = 50; //Calendar
   
-  while(RAM == 0 || CORES == 0 || HDD == 0)
+  while(RAM == 0 || CORES == 0 || HDD == 0 || threads_per_core < 1)
   {
     int input =0;
     cout << "\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
@@ -114,12 +126,22 @@ int main()
       continue;
     }
     HDD = 1024*input;
-    cout << "Please Enter How Cores you want?(2 threads per core): ";
+    cout << "Please Enter How Cores you want?(2 threads per core(not in kernel_mode)): ";
     cin >> CORES;
     if (CORES < 1)
     {
       cout << "ERROR! Not Sufficient Cores Please Allocate Atleast 1 Core\n";
       continue;
+    }
+    if (kernel_mode)
+    {
+      cout << "Please Enter No Of Threads Per Core: ";
+      cin >> threads_per_core;
+      if (threads_per_core < 1)
+      {
+        cout << "Invalid Cores Please Enter Resources Again\n";
+        continue;
+      }
     }
   }
   system("clear");
@@ -138,10 +160,7 @@ int main()
       runningCores[i][j] = -1;
   
   
-  while(true)
-  {
-    scheduler();
-  }
+  scheduler();
   pthread_join(ptid, NULL);
   pthread_join(dispatch, NULL);
   pthread_join(shift, NULL);
@@ -187,6 +206,7 @@ void display_running_cores(void)
 void displayRunningProcs(void)
 {
   bool noProcFlag=false;
+  system("tput setaf 3");
   cout << "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
   cout << "++++++++++++++++ CURRENTLY RUNNING PROCESSES +++++++++++++++\n";
   cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n\n";
@@ -207,6 +227,7 @@ void displayRunningProcs(void)
     cout << "Currenlty No Processes is Running :( \n";
   }
   cout << "\n++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n";
+  system("tput sgr0");
 }
 
 //////////////////////////////////////////////////
@@ -217,7 +238,7 @@ void release_resources(char* str)
 {
   string str1, str2;
   int index;
-    for (int i = 0;i<12;i++)
+    for (int i = 0;i < noOfMaxProc;i++)
     {
     str1 = string(enum_str[i]);
     str2 = string(str);
@@ -230,8 +251,10 @@ void release_resources(char* str)
     }
     system("clear");
     dealloc_core(index);
+    sem_wait(&semaphore);
     runningProcesses[index]--;
     RAM += needOfProcesses[index];
+    sem_post(&semaphore);
     displayRunningProcs();
     printMainMenu();
 }
@@ -258,6 +281,8 @@ void * thread_for_inter_terminal_comm(void * arg)
     fd = open(myfifo, O_RDONLY);
     // Read from FIFO
     read(fd, arr1, sizeof(arr1));
+    string temp = "notify-send '"+ string(arr1) +" Has Been Closed!'";
+    system(temp.c_str());
     release_resources(arr1);
     close(fd);
   }
@@ -265,9 +290,11 @@ void * thread_for_inter_terminal_comm(void * arg)
 
 void printMainMenu()
 {
+  system("tput setaf 2");
   cout << "\n************************************************************\n";
   cout << "************************ MAIN MENU *************************\n";
   cout << "************************************************************\n\n";
+  system("tput sgr0");
   cout << "Please Enter 1 for SUDOKU\n";
   cout << "Please Enter 2 for Calculator\n";
   cout << "Please Enter 3 for Tic Tac Toe\n";
@@ -280,7 +307,8 @@ void printMainMenu()
   cout << "Please Enter 10 to Create A File" << endl;
   cout << "Please Enter 11 to Delete A File" << endl;
   cout << "Please Enter 12 to Rename A File" << endl;
-  cout << "Please Enter 13 to terminate OS" << endl;
+  cout << "Please Enter 13 to Open Calender" << endl;
+  cout << "Please Enter 14 to terminate OS" << endl;
   cout << "Enter Here: ";
   return;
 }
@@ -292,7 +320,7 @@ void * shift_process_state(void * argv)
   {
      if(!waitingQueue.empty())
      {
-      if(needOfProcesses[waitingQueue.front()-1] <= RAM)
+      if(needOfProcesses[waitingQueue.front()-1] <= RAM && check_free_cores() )
       {
         process = waitingQueue.front();
         waitingQueue.pop_front();
@@ -464,7 +492,12 @@ void *dispatcher(void * argv)
     break;    
     case 13:
     {
-      
+      pid = fork();
+        if (!pid)
+        {
+          //child process
+          execl("./exec", "./exec", "./calendar.sh", NULL);  //execute
+        }
     }
     break;
     } //switch ends
@@ -482,7 +515,7 @@ void scheduler(void)
     displayRunningProcs();
     printMainMenu();
     cin >> choice;
-    if (choice == 13)
+    if (choice == 14)
     {
       system("kill $(pgrep bash)");
       system("clear");
@@ -498,9 +531,9 @@ void scheduler(void)
       sleep(2);
       exit(0);
     }
-    if (choice < noOfMaxProc && choice >= 1)
+    if (choice <= noOfMaxProc && choice >= 1)
     {
-      if ((RAM >= needOfProcesses[choice-1]))
+      if ((RAM >= needOfProcesses[choice-1]) && check_free_cores())
       {
           //Ready Queue Implementation
           readyQueue.push_back(choice);
@@ -514,5 +547,14 @@ void scheduler(void)
       }
     }
   } 
+}
+
+bool check_free_cores()
+{
+  for (int i = 0; i < CORES; ++i)
+    for (int j = 0; j < threads_per_core; ++j)
+      if (runningCores[i][j] ==  -1)
+        return true;
+  return false;
 }
 
