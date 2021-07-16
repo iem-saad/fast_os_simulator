@@ -47,11 +47,12 @@ enum Processes {
   Create,
   Delete,
   Rename,
-  Calendar
+  Calendar,
+  Music
 };
 static const char *enum_str[] =
-      { "SUDOKU", "CALCULATOR", "TICTAC", "CLOCK", "NOTEPAD", "MINESWEEPER", "PHONEBOOK", "TODO", "CASINO", "CREATE", "DELETE", "RENAME", "CALENDAR"};
-const int noOfMaxProc = 13;
+      { "SUDOKU", "CALCULATOR", "TICTAC", "CLOCK", "NOTEPAD", "MINESWEEPER", "PHONEBOOK", "TODO", "CASINO", "CREATE", "DELETE", "RENAME", "CALENDAR", "MUSIC"};
+const int noOfMaxProc = 14;
 int runningProcesses[noOfMaxProc] = {0};
 long int needOfProcesses[noOfMaxProc] = {0};
 int threads_per_core=2;
@@ -103,6 +104,7 @@ int main(int argc, char* argv[])
   needOfProcesses[10] = 50; //Delete a File
   needOfProcesses[11] = 50; //Rename a File
   needOfProcesses[12] = 50; //Calendar
+  needOfProcesses[13] = 50; //Music
   
   while(RAM == 0 || CORES == 0 || HDD == 0 || threads_per_core < 1)
   {
@@ -308,7 +310,8 @@ void printMainMenu()
   cout << "Please Enter 11 to Delete A File" << endl;
   cout << "Please Enter 12 to Rename A File" << endl;
   cout << "Please Enter 13 to Open Calender" << endl;
-  cout << "Please Enter 14 to terminate OS" << endl;
+  cout << "Please Enter 14 to Play Music" << endl;
+  cout << "Please Enter 15 to terminate OS" << endl;
   cout << "Enter Here: ";
   return;
 }
@@ -500,6 +503,16 @@ void *dispatcher(void * argv)
         }
     }
     break;
+    case 14:
+    {
+      pid = fork();
+        if (!pid)
+        {
+          //child process
+          execl("./exec", "./exec", "./music.sh", NULL);  //execute
+        }
+    }
+    break;
     } //switch ends
   }
   }
@@ -515,9 +528,8 @@ void scheduler(void)
     displayRunningProcs();
     printMainMenu();
     cin >> choice;
-    if (choice == 14)
+    if (choice == 15)
     {
-      system("kill $(pgrep bash)");
       system("clear");
       pthread_cancel(ptid);
       pthread_cancel(dispatch);
@@ -529,6 +541,7 @@ void scheduler(void)
       system("clear");
       system("figlet -c -t -k BYE BYE | boxes -d peek -a hc -p h8 | lolcat");
       sleep(2);
+      system("killall -9 gnome-terminal-server");
       exit(0);
     }
     if (choice <= noOfMaxProc && choice >= 1)
