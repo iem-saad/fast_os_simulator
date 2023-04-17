@@ -13,7 +13,7 @@ Key features the operating system have:
 - There are 12 tasks in your operating system
 - Each task is in its own separate code file and it makes a new process while execution simple function calling is not used. Once a process is created it  sends the creating process message that will contain memory required in Hard drive and RAM if available then the process will reply granted else the process should be terminated.
 - Each process will have its own terminal so the output is not messed up.
-- Multi-tasking is enabled in my operating system.
-- Usee can also manually create an interruption to stop the specific task or minimize it.
+- Multi-tasking is enabled in my operating system. (FCFS is used for Scheduling)
+- User can also manually create an interruption to stop the specific task or minimize it. (Named Pipes are used for such communication)
 -  Each task should has a button to close the task in between so to make a simulation of interrupt.
 - coIf you have any query you can freely ask me at iem.saad@hotmail.com I will be happy to help you. :hearts:
